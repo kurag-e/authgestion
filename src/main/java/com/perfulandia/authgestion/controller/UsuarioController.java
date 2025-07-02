@@ -2,22 +2,22 @@ package com.perfulandia.authgestion.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.CollectionModel;
 
 import com.perfulandia.authgestion.dto.CrearUsuarioRequest;
 import com.perfulandia.authgestion.dto.UsuarioDTO;
 import com.perfulandia.authgestion.model.Usuario;
 import com.perfulandia.authgestion.service.UsuarioService;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,18 +29,37 @@ public class UsuarioController {
     private final UsuarioService service;
 
     @GetMapping
-    public List<UsuarioDTO> getAll() {
-        return service.listarUsuarios();
+    public ResponseEntity<CollectionModel<EntityModel<UsuarioDTO>>> getAll() {
+        List<UsuarioDTO> usuarios = service.listarUsuarios();
+
+        List<EntityModel<UsuarioDTO>> modelos = usuarios.stream()
+            .map(usuario -> EntityModel.of(usuario,
+                linkTo(methodOn(UsuarioController.class).getById(usuario.getId())).withSelfRel(),
+                linkTo(methodOn(UsuarioController.class).eliminar(usuario.getId())).withRel("eliminar")
+            ))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(
+            CollectionModel.of(modelos,
+                linkTo(methodOn(UsuarioController.class).getAll()).withSelfRel())
+        );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Integer id) {
         try {
             UsuarioDTO usuario = service.buscarUsuarioPorId(id);
-            return ResponseEntity.ok(usuario);
+
+            EntityModel<UsuarioDTO> modelo = EntityModel.of(usuario,
+                linkTo(methodOn(UsuarioController.class).getById(id)).withSelfRel(),
+                linkTo(methodOn(UsuarioController.class).getAll()).withRel("usuarios"),
+                linkTo(methodOn(UsuarioController.class).eliminar(id)).withRel("eliminar")
+            );
+
+            return ResponseEntity.ok(modelo);
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body(Map.of("mensaje", ex.getMessage()));
+                                 .body(Map.of("mensaje", ex.getMessage()));
         }
     }
 
