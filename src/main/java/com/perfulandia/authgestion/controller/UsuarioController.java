@@ -18,30 +18,31 @@ import com.perfulandia.authgestion.service.UsuarioService;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-
-import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequestMapping("/api/usuarios")
-@RequiredArgsConstructor
 public class UsuarioController {
 
     private final UsuarioService service;
+
+    //constructor
+    public UsuarioController(UsuarioService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<UsuarioDTO>>> getAll() {
         List<UsuarioDTO> usuarios = service.listarUsuarios();
 
         List<EntityModel<UsuarioDTO>> modelos = usuarios.stream()
-            .map(usuario -> EntityModel.of(usuario,
-                linkTo(methodOn(UsuarioController.class).getById(usuario.getId())).withSelfRel(),
-                linkTo(methodOn(UsuarioController.class).eliminar(usuario.getId())).withRel("eliminar")
-            ))
-            .collect(Collectors.toList());
+                .map(usuario -> EntityModel.of(usuario,
+                        linkTo(methodOn(UsuarioController.class).getById(usuario.getId())).withSelfRel(),
+                        linkTo(methodOn(UsuarioController.class).eliminar(usuario.getId())).withRel("eliminar")
+                ))
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(
-            CollectionModel.of(modelos,
-                linkTo(methodOn(UsuarioController.class).getAll()).withSelfRel())
+                CollectionModel.of(modelos,
+                        linkTo(methodOn(UsuarioController.class).getAll()).withSelfRel())
         );
     }
 
@@ -51,15 +52,15 @@ public class UsuarioController {
             UsuarioDTO usuario = service.buscarUsuarioPorId(id);
 
             EntityModel<UsuarioDTO> modelo = EntityModel.of(usuario,
-                linkTo(methodOn(UsuarioController.class).getById(id)).withSelfRel(),
-                linkTo(methodOn(UsuarioController.class).getAll()).withRel("usuarios"),
-                linkTo(methodOn(UsuarioController.class).eliminar(id)).withRel("eliminar")
+                    linkTo(methodOn(UsuarioController.class).getById(id)).withSelfRel(),
+                    linkTo(methodOn(UsuarioController.class).getAll()).withRel("usuarios"),
+                    linkTo(methodOn(UsuarioController.class).eliminar(id)).withRel("eliminar")
             );
 
             return ResponseEntity.ok(modelo);
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(Map.of("mensaje", ex.getMessage()));
+                    .body(Map.of("mensaje", ex.getMessage()));
         }
     }
 
