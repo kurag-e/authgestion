@@ -15,22 +15,30 @@ import com.perfulandia.authgestion.repository.ClienteRepository;
 import com.perfulandia.authgestion.repository.UsuarioRepository;
 import com.perfulandia.authgestion.repository.VendedorRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepo;
     private final ClienteRepository clienteRepo;
     private final VendedorRepository vendedorRepo;
-    private final PasswordEncoder passwordEncoder; 
+    private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper mapper;
+
+    //constructor
+    public UsuarioService(UsuarioRepository usuarioRepo, ClienteRepository clienteRepo,
+                          VendedorRepository vendedorRepo, PasswordEncoder passwordEncoder,
+                          UsuarioMapper mapper) {
+        this.usuarioRepo = usuarioRepo;
+        this.clienteRepo = clienteRepo;
+        this.vendedorRepo = vendedorRepo;
+        this.passwordEncoder = passwordEncoder;
+        this.mapper = mapper;
+    }
 
     public List<UsuarioDTO> listarUsuarios() {
         return usuarioRepo.findAll().stream()
-            .map(u -> new UsuarioDTO(u.getIdUsuario(), u.getNombreUsuario(), u.getEmail(), u.getRol(), u.getEstado()))
-            .toList();
+                .map(u -> new UsuarioDTO(u.getIdUsuario(), u.getNombreUsuario(), u.getEmail(), u.getRol(), u.getEstado()))
+                .toList();
     }
 
     public Usuario crearUsuario(CrearUsuarioRequest req) {
@@ -41,8 +49,8 @@ public class UsuarioService {
         System.out.println("DEBUG >> contrasena: " + req.getContrasena());
         System.out.println(req);
 
-        // ✅ Validar que la contraseña no sea nula ni vacía
-        String rawPassword = req.getContrasena(); // ✅ correcto, coincide con el DTO
+        //validar que la contraseña no sea nula ni vacía
+        String rawPassword = req.getContrasena(); //correcto, coincide con el DTO
         if (rawPassword == null || rawPassword.isBlank()) {
             throw new IllegalArgumentException("La clave es requerida");
         }
@@ -74,7 +82,7 @@ public class UsuarioService {
                 vendedorRepo.save(v);
             }
             case "admin" -> {
-                // No se necesita nada extra, solo se guarda como usuario
+                //no se necesita nada extra, solo se guarda como usuario
             }
             default -> throw new IllegalArgumentException("Rol no soportado: " + req.getRol());
         }
@@ -84,9 +92,9 @@ public class UsuarioService {
 
     public UsuarioDTO buscarUsuarioPorId(Integer id) {
         Usuario usuario = usuarioRepo.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
 
-        // Convertir Usuario a UsuarioDTO
+        //convertir Usuario a UsuarioDTO
         return mapper.usuarioToDto(usuario);
     }
 
@@ -98,13 +106,11 @@ public class UsuarioService {
         usuario.setEmail(dto.getEmail());
         usuario.setEstado(dto.getEstado());
         usuario.setRol(dto.getRol());
-        // agrega más campos si es necesario
+        //agrega más campos si es necesario
 
         Usuario guardado = usuarioRepo.save(usuario);
         return mapper.usuarioToDto(guardado);
     }
-
-
 
     public void eliminarUsuario(Integer id) {
         usuarioRepo.deleteById(id);
